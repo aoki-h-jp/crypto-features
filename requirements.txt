@@ -1,0 +1,2 @@
+pandas~=2.0.3
+binance-bulk-downloader @ git+https://github.com/aoki-h-jp/binance-bulk-downloader
