@@ -101,6 +101,7 @@ class PreprocessingBinance:
         df.columns = ["timestamp_open", "interval_time", "funding_rate"]
         df["timestamp_open"] = pd.to_datetime(df["timestamp_open"], utc=True, unit="ms")
         df.set_index("timestamp_open", inplace=True)
+        df.index = df.index.map(lambda x: x.replace(microsecond=0))
         df = df.drop("interval_time", axis=1)
 
         return df
@@ -157,6 +158,7 @@ class PreprocessingBybit:
         df.columns = ["index", "funding_rate", "timestamp_open", "symbol"]
         df = df.drop(["index", "symbol"], axis=1)
         df["timestamp_open"] = pd.to_datetime(df["timestamp_open"], utc=True)
+        df.index = df.index.map(lambda x: x.replace(microsecond=0))
         df.set_index("timestamp_open", inplace=True)
 
         return df
