@@ -1,2 +1,2 @@
 # crypto-features
-Analyse, calculate and store features from historical and raw data of cryptocurrency.
+Consistent from downloading to feature engineering from historical and raw data of cryptocurrency CEXs.
