@@ -24,10 +24,9 @@ class BybitFundingRateDownload(BybitBulkDownloader):
     """
     Download funding rate data from Bybit
     """
+
     def __init__(self):
-        super().__init__(
-            destination_dir=".", data_type="fundingRate"
-        )
+        super().__init__(destination_dir=".", data_type="fundingRate")
         self.super = super()
 
     def run_download(self):

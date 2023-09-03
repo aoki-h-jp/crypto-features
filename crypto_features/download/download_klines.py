@@ -24,10 +24,9 @@ class BybitKlinesDownload(BybitBulkDownloader):
     """
     Download klines from Bybit
     """
+
     def __init__(self, symbol="BTCUSDT"):
-        super().__init__(
-            destination_dir=".", data_type="klines"
-        )
+        super().__init__(destination_dir=".", data_type="klines")
         self.super = super()
         self._symbol = symbol
 
