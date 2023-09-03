@@ -48,7 +48,6 @@ class InformationCorrelation:
         klines[close_chg_pct_header] = klines[close_chg_pct_header].astype(float)
         klines[close_chg_pct_header] = klines[close_chg_pct_header].round(4)
 
-        feature.index = feature.index.map(lambda x: x.replace(microsecond=0))
         feature_arr = feature[feature.index.isin(klines.index)].values
         klines_arr = klines[klines.index.isin(feature.index)][
             close_chg_pct_header
@@ -78,7 +77,7 @@ class InformationCorrelation:
             linestyle="-.",
         )
         plt.xlabel(feature.name)
-        plt.ylabel("close_chg_pct [%]")
+        plt.ylabel(f"close_chg_pct_after_{return_minutes}min [%]")
         plt.title(
             f"rho={round(rho, 3)}, pval={round(pval, 3)}\ncoef={round(lr.coef_[0][0], 3)}, intercept={round(lr.intercept_[0], 3)}\n{feature.name} vs close_chg_pct_after_{return_minutes}min"
         )
