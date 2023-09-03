@@ -33,11 +33,11 @@ class InformationCorrelation:
         if not os.path.exists("information_correlation"):
             os.mkdir("information_correlation")
 
-        klines = klines.copy()
-        feature = feature.copy()
-
         close_chg_pct_header = f"close_chg_pct_after_{return_minutes}min"
-        klines[close_chg_pct_header] = klines["close"].pct_change(return_minutes)
+        klines["close"] = klines["close"].astype(float)
+        klines[close_chg_pct_header] = klines["close"].pct_change(
+            return_minutes, fill_method="bfill"
+        )
         klines[close_chg_pct_header] = klines[close_chg_pct_header].shift(
             -return_minutes
         )

@@ -29,29 +29,7 @@ class PreprocessingBinance:
         :return: preprocessed klines data
         """
         # Load klines data
-        # merge all csv files
-        df = pd.DataFrame()
-        for file in os.listdir(
-            os.path.join(self._data_dir, self._BINANCE_KLINES_DIR, symbol, "1m")
-        ):
-            df = pd.concat(
-                [
-                    df,
-                    pd.read_csv(
-                        "/".join(
-                            [
-                                self._data_dir,
-                                self._BINANCE_KLINES_DIR,
-                                symbol,
-                                "1m",
-                                file,
-                            ]
-                        )
-                    ),
-                ]
-            )
-
-        df.columns = [
+        headers = [
             "timestamp_open",
             "open",
             "high",
@@ -65,8 +43,74 @@ class PreprocessingBinance:
             "taker_buy_quote_volume",
             "ignore",
         ]
-        df["timestamp_open"] = pd.to_datetime(df["timestamp_open"], utc=True, unit="ms")
+
+        raw_headers = [
+            "open_time",
+            "open",
+            "high",
+            "low",
+            "close",
+            "volume",
+            "close_time",
+            "quote_volume",
+            "count",
+            "taker_buy_volume",
+            "taker_buy_quote_volume",
+            "ignore",
+        ]
+
+        # merge all csv files
+        df = pd.DataFrame(columns=headers)
+        for file in os.listdir(
+            os.path.join(self._data_dir, self._BINANCE_KLINES_DIR, symbol, "1m")
+        ):
+            # header check
+            df_append_tmp = pd.read_csv(
+                "/".join(
+                    [
+                        self._data_dir,
+                        self._BINANCE_KLINES_DIR,
+                        symbol,
+                        "1m",
+                        file,
+                    ]
+                ),
+                nrows=1,
+            )
+
+            if list(df_append_tmp) != raw_headers:
+                df_append = pd.read_csv(
+                    "/".join(
+                        [
+                            self._data_dir,
+                            self._BINANCE_KLINES_DIR,
+                            symbol,
+                            "1m",
+                            file,
+                        ]
+                    ),
+                    names=headers,
+                )
+            else:
+                df_append = pd.read_csv(
+                    "/".join(
+                        [
+                            self._data_dir,
+                            self._BINANCE_KLINES_DIR,
+                            symbol,
+                            "1m",
+                            file,
+                        ]
+                    ),
+                    header=None,
+                )
+                df_append = df_append.drop(0, axis=0)
+                df_append.columns = headers
+
+            df = pd.concat([df, df_append])
+
         df.set_index("timestamp_open", inplace=True)
+        df.index = pd.to_datetime(df.index, utc=True, unit="ms")
 
         return df
 
