@@ -44,7 +44,20 @@ class PreprocessingBinance:
             "ignore",
         ]
 
-        raw_headers = ['open_time', 'open', 'high', 'low', 'close', 'volume', 'close_time', 'quote_volume', 'count', 'taker_buy_volume', 'taker_buy_quote_volume', 'ignore']
+        raw_headers = [
+            "open_time",
+            "open",
+            "high",
+            "low",
+            "close",
+            "volume",
+            "close_time",
+            "quote_volume",
+            "count",
+            "taker_buy_volume",
+            "taker_buy_quote_volume",
+            "ignore",
+        ]
 
         # merge all csv files
         df = pd.DataFrame(columns=headers)
@@ -53,15 +66,17 @@ class PreprocessingBinance:
         ):
             # header check
             df_append_tmp = pd.read_csv(
-                    "/".join(
-                        [
-                            self._data_dir,
-                            self._BINANCE_KLINES_DIR,
-                            symbol,
-                            "1m",
-                            file,
-                        ]
-                    ), nrows=1)
+                "/".join(
+                    [
+                        self._data_dir,
+                        self._BINANCE_KLINES_DIR,
+                        symbol,
+                        "1m",
+                        file,
+                    ]
+                ),
+                nrows=1,
+            )
 
             if list(df_append_tmp) != raw_headers:
                 df_append = pd.read_csv(
@@ -73,7 +88,9 @@ class PreprocessingBinance:
                             "1m",
                             file,
                         ]
-                    ), names=headers)
+                    ),
+                    names=headers,
+                )
             else:
                 df_append = pd.read_csv(
                     "/".join(
@@ -84,7 +101,9 @@ class PreprocessingBinance:
                             "1m",
                             file,
                         ]
-                    ), header=None)
+                    ),
+                    header=None,
+                )
                 df_append = df_append.drop(0, axis=0)
                 df_append.columns = headers
 
