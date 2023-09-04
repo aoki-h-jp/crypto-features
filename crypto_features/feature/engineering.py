@@ -1,10 +1,12 @@
 """
 Feature engineering module
 """
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
-from crypto_features.feature.information_correlation import InformationCorrelation
+
+from crypto_features.feature.information_correlation import \
+    InformationCorrelation
 
 
 class FeatureEngineering:
@@ -35,7 +37,7 @@ class FeatureEngineering:
 
         :param minutes: minutes to calculate return
         """
-        return self._klines['close'].pct_change(minutes)
+        return self._klines["close"].pct_change(minutes)
 
     def visualize_histogram(self, return_minutes: int):
         """
@@ -47,25 +49,27 @@ class FeatureEngineering:
         fig = plt.figure(figsize=(8, 8))
         grid = plt.GridSpec(5, 4, hspace=0.5, wspace=0.5)
 
-        x, y = InformationCorrelation.format_array(self._klines, self._feature, return_minutes)
+        x, y = InformationCorrelation.format_array(
+            self._klines, self._feature, return_minutes
+        )
         main_ax = fig.add_subplot(grid[1:, 1:])
         main_ax.scatter(x, y, alpha=0.5)
         main_ax.set_xlabel("feature")
         main_ax.tick_params(left=True, bottom=True, labelleft=True, labelbottom=True)
 
         x_hist = fig.add_subplot(grid[0, 1:], sharex=main_ax)
-        x_hist.hist(x, bins=50, align='mid', rwidth=0.8)
-        x_hist.set_title('feature vs return')
+        x_hist.hist(x, bins=50, align="mid", rwidth=0.8)
+        x_hist.set_title("feature vs return")
         x_hist.tick_params(bottom=True, labelbottom=True)
 
         y_hist = fig.add_subplot(grid[1:, 0], sharey=main_ax)
-        y_hist.hist(y, bins=50, orientation='horizontal', align='mid', rwidth=0.8)
+        y_hist.hist(y, bins=50, orientation="horizontal", align="mid", rwidth=0.8)
         y_hist.invert_xaxis()
         y_hist.tick_params(left=True, labelleft=True)
         y_hist.set_ylabel(f"return (after {return_minutes} minutes)")
 
         plt.tight_layout()
-        plt.savefig(f'feature_vs_return_{return_minutes}.png')
+        plt.savefig(f"feature_vs_return_{return_minutes}.png")
         plt.close()
 
     def diff_feature(self) -> pd.Series:
@@ -78,13 +82,13 @@ class FeatureEngineering:
         """
         Calculate square of funding rate
         """
-        return self._feature ** 2
+        return self._feature**2
 
     def cube_feature(self) -> pd.Series:
         """
         Calculate cube of funding rate
         """
-        return self._feature ** 3
+        return self._feature**3
 
     def exp_feature(self) -> pd.Series:
         """
