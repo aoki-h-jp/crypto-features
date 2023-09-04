@@ -111,6 +111,7 @@ class PreprocessingBinance:
 
         df.set_index("timestamp_open", inplace=True)
         df.index = pd.to_datetime(df.index, utc=True, unit="ms")
+        df["close"] = df["close"].astype(float)
 
         return df
 
@@ -186,6 +187,7 @@ class PreprocessingBybit:
         df = df.drop(["index", "index2"], axis=1)
         df["timestamp_open"] = pd.to_datetime(df["timestamp_open"], utc=True)
         df.set_index("timestamp_open", inplace=True)
+        df["close"] = df["close"].astype(float)
 
         return df
 

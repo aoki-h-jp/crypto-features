@@ -20,19 +20,14 @@ class InformationCorrelation:
         pass
 
     @staticmethod
-    def run_calculate(
-        klines: pd.DataFrame, feature: pd.Series, return_minutes=1, **kwargs
-    ):
+    def format_array(klines: pd.DataFrame, feature: pd.Series, return_minutes=1):
         """
-        Calculate and visualize the information correlation.
-
+        Format the array.
         :param klines: The klines data.
         :param feature: The feature data.
         :param return_minutes: The return minutes.
+        :return: formatted feature and return array.
         """
-        if not os.path.exists("information_correlation"):
-            os.mkdir("information_correlation")
-
         close_chg_pct_header = f"close_chg_pct_after_{return_minutes}min"
         klines["close"] = klines["close"].astype(float)
         klines[close_chg_pct_header] = klines["close"].pct_change(
@@ -49,14 +44,33 @@ class InformationCorrelation:
         klines[close_chg_pct_header] = klines[close_chg_pct_header].round(4)
 
         feature_arr = feature[feature.index.isin(klines.index)].values
-        klines_arr = klines[klines.index.isin(feature.index)][
+        return_arr = klines[klines.index.isin(feature.index)][
             close_chg_pct_header
         ].values
 
         assert len(feature_arr) == len(
-            klines_arr
-        ), f"len(feature_arr)={len(feature_arr)}, len(klines_arr)={len(klines_arr)}"
+            return_arr
+        ), f"len(feature_arr)={len(feature_arr)}, len(return_arr)={len(return_arr)}"
 
+        return feature_arr, return_arr
+
+    @staticmethod
+    def run_calculate(
+        klines: pd.DataFrame, feature: pd.Series, return_minutes=1, **kwargs
+    ):
+        """
+        Calculate and visualize the information correlation.
+
+        :param klines: The klines data.
+        :param feature: The feature data.
+        :param return_minutes: The return minutes.
+        """
+        if not os.path.exists("information_correlation"):
+            os.mkdir("information_correlation")
+
+        feature_arr, klines_arr = InformationCorrelation.format_array(
+            klines, feature, return_minutes
+        )
         print("[green] Start calculating the information correlation... [/green]")
 
         # Pearson's correlation coefficient
