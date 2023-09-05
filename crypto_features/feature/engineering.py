@@ -193,10 +193,14 @@ class FeatureEngineering:
         """
 
         def count_buy_sell_in_last_1min(current_time, df):
-            subset = df[(df["time"] < current_time) & (df["time"] >= current_time - pd.Timedelta(minutes=1))]
+            subset = df[
+                (df["time"] < current_time)
+                & (df["time"] >= current_time - pd.Timedelta(minutes=1))
+            ]
             buy_count = subset[subset["side"] == "BUY"].shape[0]
             sell_count = subset[subset["side"] == "SELL"].shape[0]
             return buy_count - sell_count
+
         return self._liquidationSnapshot.index.to_series().apply(
             lambda x: count_buy_sell_in_last_1min(x, self._liquidationSnapshot)
         )
@@ -217,10 +221,23 @@ class FeatureEngineering:
 
         def np_adjusted_sum_amount_in_last_1min(idx):
             current_time = times[idx]
-            mask = (times < current_time) & (times >= current_time - one_minute_in_milliseconds)
-            adjusted_amounts = np.where(sides[mask] == "BUY", amounts[mask], -amounts[mask])
+            mask = (times < current_time) & (
+                times >= current_time - one_minute_in_milliseconds
+            )
+            adjusted_amounts = np.where(
+                sides[mask] == "BUY", amounts[mask], -amounts[mask]
+            )
             return adjusted_amounts.sum()
-        se = pd.Series(np.array([np_adjusted_sum_amount_in_last_1min(i) for i in range(len(self._liquidationSnapshot))]), index=times)
+
+        se = pd.Series(
+            np.array(
+                [
+                    np_adjusted_sum_amount_in_last_1min(i)
+                    for i in range(len(self._liquidationSnapshot))
+                ]
+            ),
+            index=times,
+        )
         return se
 
     def mean_liquidation(self, count_minutes: int) -> pd.Series:

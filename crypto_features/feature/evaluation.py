@@ -1,12 +1,11 @@
 """
 Evaluation of the features
 """
-import matplotlib.pyplot as plt
-import pandas as pd
-
 import os
 
+import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 from rich import print
 from scipy.stats import pearsonr
 from sklearn.linear_model import LinearRegression
