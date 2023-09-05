@@ -18,3 +18,6 @@ Calculate and Visualize information correlation (IC). High IC (>0.05) indicates 
 
 ### engineering
 Perform feature engineering for preprocessed data.
+
+### evaluation
+Evaluate the performance of the engineered features.
