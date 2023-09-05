@@ -3,6 +3,7 @@ Evaluation of the features
 """
 import matplotlib.pyplot as plt
 import pandas as pd
+
 from .information_correlation import InformationCorrelation
 
 

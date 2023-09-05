@@ -20,7 +20,6 @@ class FeatureEngineering:
         self._klines = kwargs.get("klines", None)
         self._liquidationSnapshot = kwargs.get("liquidationsnapshot", None)
 
-
     def diff_feature(self) -> pd.Series:
         """
         Calculate difference of funding rate
