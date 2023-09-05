@@ -5,72 +5,20 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from crypto_features.feature.information_correlation import \
-    InformationCorrelation
+from .information_correlation import InformationCorrelation
 
 
 class FeatureEngineering:
-    def __init__(self, feature: pd.Series, klines=None):
+    def __init__(self, **kwargs):
         """
 
         :param feature: feature data
         :param klines: klines data
+        :param liquidationsnapshot: preprocessed liquidationSnapshot data (pd.DataFrame)
         """
-        self._feature = feature
-        self._klines = klines
-
-    def set_feature(self, feature: pd.Series):
-        """
-        Set feature data
-        """
-        self._feature = feature
-
-    def set_klines(self, klines: pd.DataFrame):
-        """
-        Set return data
-        """
-        self._klines = klines
-
-    def _make_return(self, minutes: int) -> pd.Series:
-        """
-        Make return data
-
-        :param minutes: minutes to calculate return
-        """
-        return self._klines["close"].pct_change(minutes)
-
-    def visualize_histogram(self, return_minutes: int):
-        """
-        Visualize histogram of funding rate
-
-        :param return_minutes: minutes to calculate return
-        """
-        # plot settings
-        fig = plt.figure(figsize=(8, 8))
-        grid = plt.GridSpec(5, 4, hspace=0.5, wspace=0.5)
-
-        x, y = InformationCorrelation.format_array(
-            self._klines, self._feature, return_minutes
-        )
-        main_ax = fig.add_subplot(grid[1:, 1:])
-        main_ax.scatter(x, y, alpha=0.5)
-        main_ax.set_xlabel("feature")
-        main_ax.tick_params(left=True, bottom=True, labelleft=True, labelbottom=True)
-
-        x_hist = fig.add_subplot(grid[0, 1:], sharex=main_ax)
-        x_hist.hist(x, bins=50, align="mid", rwidth=0.8)
-        x_hist.set_title("feature vs return")
-        x_hist.tick_params(bottom=True, labelbottom=True)
-
-        y_hist = fig.add_subplot(grid[1:, 0], sharey=main_ax)
-        y_hist.hist(y, bins=50, orientation="horizontal", align="mid", rwidth=0.8)
-        y_hist.invert_xaxis()
-        y_hist.tick_params(left=True, labelleft=True)
-        y_hist.set_ylabel(f"return (after {return_minutes} minutes)")
-
-        plt.tight_layout()
-        plt.savefig(f"feature_vs_return_{return_minutes}.png")
-        plt.close()
+        self._feature = kwargs.get("feature", None)
+        self._klines = kwargs.get("klines", None)
+        self._liquidationSnapshot = kwargs.get("liquidationsnapshot", None)
 
     def diff_feature(self) -> pd.Series:
         """
@@ -239,3 +187,89 @@ class FeatureEngineering:
         Calculate trunc of funding rate
         """
         return np.trunc(self._feature)
+
+    def count_liquidation(self, count_minutes: int) -> pd.Series:
+        """
+        Count number of liquidation
+
+        :param count_minutes: minutes to count liquidation
+        """
+        return self._liquidationSnapshot.index.to_series().apply(
+            lambda x: len(
+                self._liquidationSnapshot[
+                    (self._liquidationSnapshot.index < x)
+                    & (
+                        self._liquidationSnapshot.index
+                        > x - pd.Timedelta(minutes=count_minutes)
+                    )
+                ]
+            )
+        )
+
+    def count_quote_liquidation(self, count_minutes: int) -> pd.Series:
+        """
+        Count number of liquidation per minute
+
+        :param count_minutes: minutes to count liquidation
+        """
+        self._liquidationSnapshot["amount"] = (
+            self._liquidationSnapshot["price"]
+            * self._liquidationSnapshot["original_quantity"]
+        )
+        return self._liquidationSnapshot.index.to_series().apply(
+            lambda x: self._liquidationSnapshot[
+                (self._liquidationSnapshot.index < x)
+                & (
+                    self._liquidationSnapshot.index
+                    > x - pd.Timedelta(minutes=count_minutes)
+                )
+            ]["amount"].sum()
+        )
+
+    def mean_liquidation(self, count_minutes: int) -> pd.Series:
+        """
+        Calculate mean of liquidation
+
+        :param count_minutes: minutes to calculate mean liquidation
+        """
+        df = self.count_quote_liquidation(count_minutes) / self.count_liquidation(
+            count_minutes
+        )
+        df = df.fillna(0)
+        return df
+
+    def ratio_liquidation(self, count_minutes: int) -> pd.Series:
+        """
+        Calculate ratio of liquidation
+        count of number of liquidation / count of number of all trades
+
+        :param count_minutes: minutes to calculate ratio liquidation
+        """
+        self._klines["count"] = self._klines["count"].astype(int)
+        return self.count_liquidation(
+            count_minutes
+        ) / self._liquidationSnapshot.index.to_series().apply(
+            lambda x: self._klines[
+                (self._klines.index < x)
+                & (self._klines.index > x - pd.Timedelta(minutes=1))
+            ]["count"].sum()
+        )
+
+    def ratio_quote_liquidation(self, count_minutes: int) -> pd.Series:
+        """
+        Calculate ratio of liquidation
+        count of liquidation volume by quote / count of trades volume by quote
+
+        :param count_minutes: minutes to calculate ratio liquidation
+        """
+        self._klines["taker_buy_quote_volume"] = self._klines[
+            "taker_buy_quote_volume"
+        ].astype(float)
+        return self.count_quote_liquidation(
+            count_minutes
+        ) / self._liquidationSnapshot.index.to_series().apply(
+            lambda x: self._klines[
+                (self._klines.index < x)
+                & (self._klines.index > x - pd.Timedelta(minutes=1))
+            ]["taker_buy_quote_volume"].sum()
+        )
