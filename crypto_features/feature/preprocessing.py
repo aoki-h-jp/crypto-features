@@ -18,6 +18,9 @@ class PreprocessingBinance:
     _BINANCE_FUNDINGRATE_DIR = os.path.join(
         "data", "futures", "um", "monthly", "fundingRate"
     )
+    _BINANCE_LIQUIDATIONSNAPSHOT_DIR = os.path.join(
+        "data", "futures", "um", "daily", "liquidationSnapshot"
+    )
 
     def __init__(self, data_dir):
         self._data_dir = data_dir
@@ -148,6 +151,42 @@ class PreprocessingBinance:
         df.set_index("timestamp_open", inplace=True)
         df.index = df.index.map(lambda x: x.replace(microsecond=0))
         df = df.drop("interval_time", axis=1)
+
+        return df
+
+    def _load_liquidationsnapshot_data(self, symbol) -> pd.DataFrame:
+        """
+        Load liquidation data from csv files.
+        :param symbol: symbol name
+        :return: preprocessed liquidation data
+        """
+        # Load liquidation data
+        # merge all csv files
+        df = pd.DataFrame()
+        for file in os.listdir(
+            os.path.join(self._data_dir, self._BINANCE_LIQUIDATIONSNAPSHOT_DIR, symbol)
+        ):
+            df = pd.concat(
+                [
+                    df,
+                    pd.read_csv(
+                        "/".join(
+                            [
+                                self._data_dir,
+                                self._BINANCE_LIQUIDATIONSNAPSHOT_DIR,
+                                symbol,
+                                file,
+                            ]
+                        )
+                    ),
+                ]
+            )
+
+        df.columns = ["timestamp_open","side","order_type","time_in_force","original_quantity","price","average_price","order_status","last_fill_quantity","accumulated_fill_quantity"]
+        df["timestamp_open"] = pd.to_datetime(df["timestamp_open"], utc=True, unit="ms")
+        df.set_index("timestamp_open", inplace=True)
+        df.index = df.index.map(lambda x: x.replace(microsecond=0))
+        df = df.drop_duplicates(keep="first")
 
         return df
 

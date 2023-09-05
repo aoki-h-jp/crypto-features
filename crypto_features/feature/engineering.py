@@ -5,19 +5,21 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from crypto_features.feature.information_correlation import \
+from .information_correlation import \
     InformationCorrelation
 
 
 class FeatureEngineering:
-    def __init__(self, feature: pd.Series, klines=None):
+    def __init__(self, **kwargs):
         """
 
         :param feature: feature data
         :param klines: klines data
+        :param liquidationsnapshot: preprocessed liquidationSnapshot data (pd.DataFrame)
         """
-        self._feature = feature
-        self._klines = klines
+        self._feature = kwargs.get("feature", None)
+        self._klines = kwargs.get("klines", None)
+        self._liquidationSnapshot = kwargs.get("liquidationsnapshot", None)
 
     def set_feature(self, feature: pd.Series):
         """
@@ -239,3 +241,50 @@ class FeatureEngineering:
         Calculate trunc of funding rate
         """
         return np.trunc(self._feature)
+
+    def count_liquidation(self, count_minutes: int) -> pd.Series:
+        """
+        Count number of liquidation
+
+        :param count_minutes: minutes to count liquidation
+        """
+        return self._liquidationSnapshot.index.to_series().apply(lambda x: len(self._liquidationSnapshot[(self._liquidationSnapshot.index < x) & (self._liquidationSnapshot.index > x - pd.Timedelta(minutes=count_minutes))]))
+
+    def count_quote_liquidation(self, count_minutes: int) -> pd.Series:
+        """
+        Count number of liquidation per minute
+
+        :param count_minutes: minutes to count liquidation
+        """
+        self._liquidationSnapshot["amount"] = self._liquidationSnapshot["price"] * self._liquidationSnapshot["original_quantity"]
+        return self._liquidationSnapshot.index.to_series().apply(lambda x: self._liquidationSnapshot[(self._liquidationSnapshot.index < x) & (self._liquidationSnapshot.index > x - pd.Timedelta(minutes=count_minutes))]['amount'].sum())
+
+    def mean_liquidation(self, count_minutes: int) -> pd.Series:
+        """
+        Calculate mean of liquidation
+
+        :param count_minutes: minutes to calculate mean liquidation
+        """
+        df = self.count_quote_liquidation(count_minutes) / self.count_liquidation(count_minutes)
+        df = df.fillna(0)
+        return df
+
+    def ratio_liquidation(self, count_minutes: int) -> pd.Series:
+        """
+        Calculate ratio of liquidation
+        count of number of liquidation / count of number of all trades
+
+        :param count_minutes: minutes to calculate ratio liquidation
+        """
+        self._klines["count"] = self._klines["count"].astype(int)
+        return self.count_liquidation(count_minutes) / self._liquidationSnapshot.index.to_series().apply(lambda x: self._klines[(self._klines.index < x) & (self._klines.index > x - pd.Timedelta(minutes=1))]['count'].sum())
+
+    def ratio_quote_liquidation(self, count_minutes: int) -> pd.Series:
+        """
+        Calculate ratio of liquidation
+        count of liquidation volume by quote / count of trades volume by quote
+
+        :param count_minutes: minutes to calculate ratio liquidation
+        """
+        self._klines["taker_buy_quote_volume"] = self._klines["taker_buy_quote_volume"].astype(float)
+        return self.count_quote_liquidation(count_minutes) / self._liquidationSnapshot.index.to_series().apply(lambda x: self._klines[(self._klines.index < x) & (self._klines.index > x - pd.Timedelta(minutes=1))]['taker_buy_quote_volume'].sum())
