@@ -201,6 +201,15 @@ class PreprocessingBinance:
 
         return df
 
+    def load_klines_data(self):
+        self._load_klines_data()
+
+    def load_fundingrate_data(self):
+        self._load_fundingrate_data()
+
+    def load_liquidationsnapshot_data(self):
+        self._load_liquidationsnapshot_data()
+
 
 class PreprocessingBybit:
     """
@@ -258,3 +267,9 @@ class PreprocessingBybit:
         df.set_index("timestamp_open", inplace=True)
 
         return df
+
+    def load_klines_data(self):
+        self._load_klines_data()
+
+    def load_fundingrate_data(self):
+        self._load_fundingrate_data()
