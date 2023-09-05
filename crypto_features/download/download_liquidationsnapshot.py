@@ -11,7 +11,9 @@ class BinanceLiquidationSnapshotDownload(BinanceBulkDownloader):
 
     def __init__(self):
         super().__init__(
-            destination_dir=".", data_type="liquidationSnapshot", timeperiod_per_file="daily"
+            destination_dir=".",
+            data_type="liquidationSnapshot",
+            timeperiod_per_file="daily",
         )
         self.super = super()
 

@@ -5,8 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from .information_correlation import \
-    InformationCorrelation
+from .information_correlation import InformationCorrelation
 
 
 class FeatureEngineering:
@@ -248,7 +247,17 @@ class FeatureEngineering:
 
         :param count_minutes: minutes to count liquidation
         """
-        return self._liquidationSnapshot.index.to_series().apply(lambda x: len(self._liquidationSnapshot[(self._liquidationSnapshot.index < x) & (self._liquidationSnapshot.index > x - pd.Timedelta(minutes=count_minutes))]))
+        return self._liquidationSnapshot.index.to_series().apply(
+            lambda x: len(
+                self._liquidationSnapshot[
+                    (self._liquidationSnapshot.index < x)
+                    & (
+                        self._liquidationSnapshot.index
+                        > x - pd.Timedelta(minutes=count_minutes)
+                    )
+                ]
+            )
+        )
 
     def count_quote_liquidation(self, count_minutes: int) -> pd.Series:
         """
@@ -256,8 +265,19 @@ class FeatureEngineering:
 
         :param count_minutes: minutes to count liquidation
         """
-        self._liquidationSnapshot["amount"] = self._liquidationSnapshot["price"] * self._liquidationSnapshot["original_quantity"]
-        return self._liquidationSnapshot.index.to_series().apply(lambda x: self._liquidationSnapshot[(self._liquidationSnapshot.index < x) & (self._liquidationSnapshot.index > x - pd.Timedelta(minutes=count_minutes))]['amount'].sum())
+        self._liquidationSnapshot["amount"] = (
+            self._liquidationSnapshot["price"]
+            * self._liquidationSnapshot["original_quantity"]
+        )
+        return self._liquidationSnapshot.index.to_series().apply(
+            lambda x: self._liquidationSnapshot[
+                (self._liquidationSnapshot.index < x)
+                & (
+                    self._liquidationSnapshot.index
+                    > x - pd.Timedelta(minutes=count_minutes)
+                )
+            ]["amount"].sum()
+        )
 
     def mean_liquidation(self, count_minutes: int) -> pd.Series:
         """
@@ -265,7 +285,9 @@ class FeatureEngineering:
 
         :param count_minutes: minutes to calculate mean liquidation
         """
-        df = self.count_quote_liquidation(count_minutes) / self.count_liquidation(count_minutes)
+        df = self.count_quote_liquidation(count_minutes) / self.count_liquidation(
+            count_minutes
+        )
         df = df.fillna(0)
         return df
 
@@ -277,7 +299,14 @@ class FeatureEngineering:
         :param count_minutes: minutes to calculate ratio liquidation
         """
         self._klines["count"] = self._klines["count"].astype(int)
-        return self.count_liquidation(count_minutes) / self._liquidationSnapshot.index.to_series().apply(lambda x: self._klines[(self._klines.index < x) & (self._klines.index > x - pd.Timedelta(minutes=1))]['count'].sum())
+        return self.count_liquidation(
+            count_minutes
+        ) / self._liquidationSnapshot.index.to_series().apply(
+            lambda x: self._klines[
+                (self._klines.index < x)
+                & (self._klines.index > x - pd.Timedelta(minutes=1))
+            ]["count"].sum()
+        )
 
     def ratio_quote_liquidation(self, count_minutes: int) -> pd.Series:
         """
@@ -286,5 +315,14 @@ class FeatureEngineering:
 
         :param count_minutes: minutes to calculate ratio liquidation
         """
-        self._klines["taker_buy_quote_volume"] = self._klines["taker_buy_quote_volume"].astype(float)
-        return self.count_quote_liquidation(count_minutes) / self._liquidationSnapshot.index.to_series().apply(lambda x: self._klines[(self._klines.index < x) & (self._klines.index > x - pd.Timedelta(minutes=1))]['taker_buy_quote_volume'].sum())
+        self._klines["taker_buy_quote_volume"] = self._klines[
+            "taker_buy_quote_volume"
+        ].astype(float)
+        return self.count_quote_liquidation(
+            count_minutes
+        ) / self._liquidationSnapshot.index.to_series().apply(
+            lambda x: self._klines[
+                (self._klines.index < x)
+                & (self._klines.index > x - pd.Timedelta(minutes=1))
+            ]["taker_buy_quote_volume"].sum()
+        )

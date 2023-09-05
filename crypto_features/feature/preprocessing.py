@@ -182,7 +182,18 @@ class PreprocessingBinance:
                 ]
             )
 
-        df.columns = ["timestamp_open","side","order_type","time_in_force","original_quantity","price","average_price","order_status","last_fill_quantity","accumulated_fill_quantity"]
+        df.columns = [
+            "timestamp_open",
+            "side",
+            "order_type",
+            "time_in_force",
+            "original_quantity",
+            "price",
+            "average_price",
+            "order_status",
+            "last_fill_quantity",
+            "accumulated_fill_quantity",
+        ]
         df["timestamp_open"] = pd.to_datetime(df["timestamp_open"], utc=True, unit="ms")
         df.set_index("timestamp_open", inplace=True)
         df.index = df.index.map(lambda x: x.replace(microsecond=0))
