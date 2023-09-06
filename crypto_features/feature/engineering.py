@@ -238,6 +238,7 @@ class FeatureEngineering:
             ),
             index=times,
         )
+        se.index = pd.to_datetime(se.index, unit="ms", utc=True)
         return se
 
     def mean_liquidation(self, count_minutes: int) -> pd.Series:
