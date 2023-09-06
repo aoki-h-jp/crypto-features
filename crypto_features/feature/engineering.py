@@ -195,7 +195,10 @@ class FeatureEngineering:
         def count_buy_sell_in_last_1min(current_time, df):
             subset = df[
                 (df["timestamp_open"] < current_time)
-                & (df["timestamp_open"] >= current_time - pd.Timedelta(minutes=count_minutes))
+                & (
+                    df["timestamp_open"]
+                    >= current_time - pd.Timedelta(minutes=count_minutes)
+                )
             ]
             buy_count = subset[subset["side"] == "BUY"].shape[0]
             sell_count = subset[subset["side"] == "SELL"].shape[0]
