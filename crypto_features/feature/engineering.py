@@ -1,11 +1,8 @@
 """
 Feature engineering module
 """
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-
-from .information_correlation import InformationCorrelation
 
 
 class FeatureEngineering:
@@ -194,16 +191,18 @@ class FeatureEngineering:
 
         :param count_minutes: minutes to count liquidation
         """
+
+        def count_buy_sell_in_last_1min(current_time, df):
+            subset = df[
+                (df.index < current_time)
+                & (df.index >= current_time - pd.Timedelta(minutes=count_minutes))
+            ]
+            buy_count = subset[subset["side"] == "BUY"].shape[0]
+            sell_count = subset[subset["side"] == "SELL"].shape[0]
+            return buy_count - sell_count
+
         return self._liquidationSnapshot.index.to_series().apply(
-            lambda x: len(
-                self._liquidationSnapshot[
-                    (self._liquidationSnapshot.index < x)
-                    & (
-                        self._liquidationSnapshot.index
-                        > x - pd.Timedelta(minutes=count_minutes)
-                    )
-                ]
-            )
+            lambda x: count_buy_sell_in_last_1min(x, self._liquidationSnapshot)
         )
 
     def count_quote_liquidation(self, count_minutes: int) -> pd.Series:
@@ -216,15 +215,30 @@ class FeatureEngineering:
             self._liquidationSnapshot["price"]
             * self._liquidationSnapshot["original_quantity"]
         )
-        return self._liquidationSnapshot.index.to_series().apply(
-            lambda x: self._liquidationSnapshot[
-                (self._liquidationSnapshot.index < x)
-                & (
-                    self._liquidationSnapshot.index
-                    > x - pd.Timedelta(minutes=count_minutes)
-                )
-            ]["amount"].sum()
+        times = self._liquidationSnapshot.index.values
+        amounts = self._liquidationSnapshot["amount"].values
+        sides = self._liquidationSnapshot["side"].values
+
+        def np_adjusted_sum_amount_in_last_1min(idx):
+            current_time = times[idx]
+            mask = (times < current_time) & (
+                times >= current_time - pd.Timedelta(minutes=count_minutes)
+            )
+            adjusted_amounts = np.where(
+                sides[mask] == "BUY", amounts[mask], -amounts[mask]
+            )
+            return adjusted_amounts.sum()
+
+        se = pd.Series(
+            np.array(
+                [
+                    np_adjusted_sum_amount_in_last_1min(i)
+                    for i in range(len(self._liquidationSnapshot))
+                ]
+            ),
+            index=times,
         )
+        return se
 
     def mean_liquidation(self, count_minutes: int) -> pd.Series:
         """
