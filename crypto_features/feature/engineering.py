@@ -261,14 +261,17 @@ class FeatureEngineering:
         :param count_minutes: minutes to calculate ratio liquidation
         """
         self._klines["count"] = self._klines["count"].astype(int)
-        return self.count_liquidation(
+        se = self.count_liquidation(
             count_minutes
         ) / self._liquidationSnapshot.index.to_series().apply(
             lambda x: self._klines[
                 (self._klines.index < x)
-                & (self._klines.index > x - pd.Timedelta(minutes=1))
+                & (self._klines.index > x - pd.Timedelta(minutes=count_minutes))
             ]["count"].sum()
         )
+        se = se.fillna(0)
+        se = se.replace([np.inf, -np.inf], 0)
+        return se
 
     def ratio_quote_liquidation(self, count_minutes: int) -> pd.Series:
         """
@@ -280,11 +283,14 @@ class FeatureEngineering:
         self._klines["taker_buy_quote_volume"] = self._klines[
             "taker_buy_quote_volume"
         ].astype(float)
-        return self.count_quote_liquidation(
+        se = self.count_quote_liquidation(
             count_minutes
         ) / self._liquidationSnapshot.index.to_series().apply(
             lambda x: self._klines[
                 (self._klines.index < x)
-                & (self._klines.index > x - pd.Timedelta(minutes=1))
+                & (self._klines.index > x - pd.Timedelta(minutes=count_minutes))
             ]["taker_buy_quote_volume"].sum()
         )
+        se = se.fillna(0)
+        se = se.replace([np.inf, -np.inf], 0)
+        return se
