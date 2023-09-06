@@ -194,8 +194,8 @@ class FeatureEngineering:
 
         def count_buy_sell_in_last_1min(current_time, df):
             subset = df[
-                (df["time"] < current_time)
-                & (df["time"] >= current_time - pd.Timedelta(minutes=1))
+                (df["timestamp_open"] < current_time)
+                & (df["timestamp_open"] >= current_time - pd.Timedelta(minutes=count_minutes))
             ]
             buy_count = subset[subset["side"] == "BUY"].shape[0]
             sell_count = subset[subset["side"] == "SELL"].shape[0]
@@ -215,14 +215,14 @@ class FeatureEngineering:
             self._liquidationSnapshot["price"]
             * self._liquidationSnapshot["original_quantity"]
         )
-        times = self._liquidationSnapshot["time"].values
+        times = self._liquidationSnapshot["timestamp_open"].values
         amounts = self._liquidationSnapshot["amount"].values
         sides = self._liquidationSnapshot["side"].values
 
         def np_adjusted_sum_amount_in_last_1min(idx):
             current_time = times[idx]
             mask = (times < current_time) & (
-                times >= current_time - one_minute_in_milliseconds
+                times >= current_time - pd.Timedelta(minutes=count_minutes)
             )
             adjusted_amounts = np.where(
                 sides[mask] == "BUY", amounts[mask], -amounts[mask]
