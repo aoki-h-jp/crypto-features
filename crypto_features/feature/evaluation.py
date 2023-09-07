@@ -26,7 +26,7 @@ class EvaluationFeature:
 
     def visualize_histogram(self, return_minutes: int):
         """
-        Visualize histogram of funding rate
+        Visualize histogram feature vs return
 
         :param return_minutes: minutes to calculate return
         """
@@ -34,9 +34,7 @@ class EvaluationFeature:
         fig = plt.figure(figsize=(8, 8))
         grid = plt.GridSpec(5, 4, hspace=0.5, wspace=0.5)
 
-        x, y = InformationCorrelation.format_array(
-            self._klines, self._feature, return_minutes
-        )
+        x, y = self.format_array(return_minutes)
         main_ax = fig.add_subplot(grid[1:, 1:])
         main_ax.scatter(x, y, alpha=0.5)
         main_ax.set_xlabel("feature")
@@ -59,7 +57,7 @@ class EvaluationFeature:
 
     def format_array(self, return_minutes=1):
         """
-        Format the array.
+        Format the array for plotting
         :param return_minutes: The return minutes.
         :return: formatted feature and return array.
         """
@@ -104,9 +102,7 @@ class EvaluationFeature:
         klines = self._klines
         feature = self._feature
 
-        feature_arr, klines_arr = InformationCorrelation.format_array(
-            klines, feature, return_minutes
-        )
+        feature_arr, klines_arr = self.format_array(return_minutes)
         print("[green] Start calculating the information correlation... [/green]")
 
         # Pearson's correlation coefficient
