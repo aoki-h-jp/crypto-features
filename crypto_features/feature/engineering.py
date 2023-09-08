@@ -16,12 +16,14 @@ class FeatureEngineering:
 
         :param feature: feature data (pd.Series)
         :param klines: klines data (pd.DataFrame)
+        :param aggtrades: aggTrades data (pd.DataFrame)
         :param liquidationsnapshot: preprocessed liquidationSnapshot data (pd.DataFrame)
         :param start_time: start time of feature data (datetime.datetime)
         :param end_time: end time of feature data (datetime.datetime)
         """
         self._feature: pd.Series = kwargs.get("feature", None)
         self._klines: pd.DataFrame = kwargs.get("klines", None)
+        self._aggtrades: pd.DataFrame = kwargs.get("aggtrades", None)
         self._liquidationSnapshot: pd.DataFrame = kwargs.get(
             "liquidationsnapshot", None
         )
@@ -54,6 +56,19 @@ class FeatureEngineering:
         self._klines = self._klines.loc[self._start_time : self._end_time]
         return self._klines
 
+    def _parse_aggtrades(self) -> pd.DataFrame:
+        """
+        Parse aggtrades data
+        """
+        if self._aggtrades is None:
+            raise InvalidParameterError("The aggtrades data is not given.")
+        if self._start_time is None:
+            raise InvalidParameterError("The start time is not given.")
+        if self._end_time is None:
+            raise InvalidParameterError("The end time is not given.")
+        self._aggtrades = self._aggtrades.loc[self._start_time : self._end_time]
+        return self._aggtrades
+
     def _parse_liquidationsnapshot(self) -> pd.DataFrame:
         """
         Parse liquidationSnapshot data
@@ -68,6 +83,13 @@ class FeatureEngineering:
             self._start_time : self._end_time
         ]
         return self._liquidationSnapshot
+
+    def _check_start_end_time(self):
+        """
+        Check start and end time
+        :return: True if start and end time are given, False otherwise
+        """
+        return self._start_time is not None and self._end_time is not None
 
     def diff_feature(self) -> pd.Series:
         """
@@ -243,7 +265,7 @@ class FeatureEngineering:
 
         :param count_minutes: minutes to count liquidation
         """
-        if self._start_time is not None and self._end_time is not None:
+        if self._check_start_end_time():
             parsed = self._parse_liquidationsnapshot()
         else:
             parsed = self._liquidationSnapshot
@@ -271,7 +293,7 @@ class FeatureEngineering:
 
         :param count_minutes: minutes to count liquidation
         """
-        if self._start_time is not None and self._end_time is not None:
+        if self._check_start_end_time():
             parsed = self._parse_liquidationsnapshot()
         else:
             parsed = self._liquidationSnapshot
@@ -309,9 +331,7 @@ class FeatureEngineering:
 
         :param count_minutes: minutes to calculate mean liquidation
         """
-        df = self.count_quote_liquidation(count_minutes) / self.count_liquidation(
-            count_minutes
-        )
+        df = self.count_quote_liquidation(count_minutes).abs() / self.count_liquidation(count_minutes)
         df = df.fillna(0)
         return df.resample("1S").mean().fillna(0)
 
@@ -322,18 +342,27 @@ class FeatureEngineering:
 
         :param count_minutes: minutes to calculate ratio liquidation
         """
-        self._klines["count"] = self._klines["count"].astype(int)
-        se = self.count_liquidation(
-            count_minutes
-        ) / self._liquidationSnapshot.index.to_series().apply(
-            lambda x: self._klines[
-                (self._klines.index < x)
-                & (self._klines.index > x - pd.Timedelta(minutes=count_minutes))
-            ]["count"].sum()
+        if self._check_start_end_time():
+            aggtrades = self._parse_aggtrades()
+        else:
+            aggtrades = self._aggtrades
+
+        index_range = pd.date_range(
+            start=self._start_time, end=self._end_time, freq="1S", tz="UTC"
         )
-        se = se.fillna(0)
-        se = se.replace([np.inf, -np.inf], 0)
-        return se.resample("1S").mean().fillna(0)
+        empty_df = pd.DataFrame(index=index_range)
+        empty_df["aggtrade_count"] = empty_df.index.to_series().apply(
+            lambda x: aggtrades[
+                (aggtrades.index < x)
+                & (aggtrades.index > x - pd.Timedelta(minutes=count_minutes))
+            ].shape[0]
+        )
+        empty_df["aggtrade_count"] = empty_df["aggtrade_count"].fillna(0)
+        empty_df["aggtrade_count"] = empty_df["aggtrade_count"].astype(int)
+        df = self.count_liquidation(count_minutes) / empty_df["aggtrade_count"]
+        df = df.fillna(0)
+
+        return df
 
     def ratio_quote_liquidation(self, count_minutes: int) -> pd.Series:
         """
@@ -342,17 +371,29 @@ class FeatureEngineering:
 
         :param count_minutes: minutes to calculate ratio liquidation
         """
-        self._klines["taker_buy_quote_volume"] = self._klines[
-            "taker_buy_quote_volume"
-        ].astype(float)
-        se = self.count_quote_liquidation(
-            count_minutes
-        ) / self._liquidationSnapshot.index.to_series().apply(
-            lambda x: self._klines[
-                (self._klines.index < x)
-                & (self._klines.index > x - pd.Timedelta(minutes=count_minutes))
-            ]["taker_buy_quote_volume"].sum()
+        if self._check_start_end_time():
+            aggtrades = self._parse_aggtrades()
+        else:
+            aggtrades = self._aggtrades
+
+        aggtrades["price"] = aggtrades["price"].astype(float)
+        aggtrades["quantity"] = aggtrades["quantity"].astype(float)
+        aggtrades["amount"] = (aggtrades["price"] * aggtrades["quantity"])
+        index_range = pd.date_range(
+            start=self._start_time, end=self._end_time, freq="1S", tz="UTC"
         )
-        se = se.fillna(0)
-        se = se.replace([np.inf, -np.inf], 0)
-        return se.resample("1S").mean().fillna(0)
+        empty_df = pd.DataFrame(index=index_range)
+
+        def sum_amount(ts):
+            start_time = ts - pd.Timedelta(minutes=count_minutes)
+            subset = aggtrades[(aggtrades.index > start_time) & (aggtrades.index <= ts)]
+            return subset["amount"].sum()
+
+        empty_df["aggtrade_amount"] = empty_df.index.to_series().apply(sum_amount)
+        empty_df["aggtrade_amount"] = empty_df["aggtrade_amount"].fillna(0)
+        empty_df["aggtrade_amount"] = empty_df["aggtrade_amount"].astype(float)
+        df = self.count_quote_liquidation(count_minutes).abs() / empty_df["aggtrade_amount"]
+        df = df.fillna(0)
+
+        return df
+
