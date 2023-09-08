@@ -6,6 +6,7 @@ Download the following data from binance (USDT-M), bybit (linear) in one go.
 |              | binance | bybit |
 |--------------|---------|-------|
 | klines       |      ✅  |   ✅  |
+| aggTrades |      ✅  |   TBD  |
 | fundingRate  |    ✅    |   ✅  |
 | liquidationSnapshot |    ✅    |  ❌  |
 

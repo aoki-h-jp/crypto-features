@@ -9,12 +9,15 @@ import pandas as pd
 from rich import print
 from scipy.stats import pearsonr
 from sklearn.linear_model import LinearRegression
+# from crypto_features.feature.exceptions import InsufficientDataError
+from .exceptions import InsufficientDataError, DataNotFoundError
 
 
 class EvaluationFeature:
     def __init__(self, **kwargs):
         self._feature = kwargs.get("feature", None)
         self._klines = kwargs.get("klines", None)
+        self._aggtrades = kwargs.get("aggTrades", None)
 
     def _make_return(self, minutes: int) -> pd.Series:
         """
@@ -22,6 +25,8 @@ class EvaluationFeature:
 
         :param minutes: minutes to calculate return
         """
+        if self._klines is None:
+            raise DataNotFoundError("The klines data is not given.")
         return self._klines["close"].pct_change(minutes)
 
     def visualize_histogram(self, return_minutes: int):
@@ -55,14 +60,55 @@ class EvaluationFeature:
         plt.savefig(f"feature_vs_return_{return_minutes}.png")
         plt.close()
 
+    def resample_aggtrades(self):
+        """
+        Resample aggtrades data
+        :return: resampled aggtrades data
+        """
+        if self._aggtrades is None:
+            raise DataNotFoundError("The aggtrades data is not given.")
+
+        self._aggtrades['is_buyer_maker_count'] = self._aggtrades['is_buyer_maker'].map({True: -1, False: 1})
+        self._aggtrades['buy_quantity'] = self._aggtrades['quantity'].where(self._aggtrades['is_buyer_maker'] == False, 0)
+        self._aggtrades['sell_quantity'] = self._aggtrades['quantity'].where(self._aggtrades['is_buyer_maker'] == True, 0)
+        self._aggtrades['price'] = self._aggtrades['price'].astype(float)
+
+        aggregation_updated = {
+            'price': 'mean',
+            'buy_quantity': 'sum',
+            'sell_quantity': 'sum',
+            'is_buyer_maker_count': 'sum'
+        }
+
+        resampled_updated_data = self._aggtrades.resample('1S').agg(aggregation_updated)
+        resampled_updated_data['net_quantity'] = resampled_updated_data['buy_quantity'] - resampled_updated_data[
+            'sell_quantity']
+        resampled_updated_data['count'] = self._aggtrades.resample('1S').size()
+        resampled_updated_data.fillna(method='ffill', inplace=True)
+        resampled_updated_data["close"] = resampled_updated_data["price"].astype(float)
+
+        return resampled_updated_data
+
     def format_array(self, return_minutes=1):
         """
         Format the array for plotting
         :param return_minutes: The return minutes.
         :return: formatted feature and return array.
         """
-        klines = self._klines
-        feature = self._feature
+        if self._feature.index.inferred_freq == "T":
+            feature = self._feature
+            if self._klines is None:
+                raise DataNotFoundError("The klines data is not given.")
+            else:
+                klines = self._klines
+        elif self._feature.index.inferred_freq == "S":
+            feature = self._feature
+            klines = self.resample_aggtrades()
+        else:
+            if self._feature is None:
+                raise DataNotFoundError("The feature data is not given.")
+            else:
+                raise InsufficientDataError("The feature data frequency is not in seconds or minutes.")
 
         close_chg_pct_header = f"close_chg_pct_after_{return_minutes}min"
         klines["close"] = klines["close"].astype(float)
@@ -99,9 +145,6 @@ class EvaluationFeature:
         if not os.path.exists("information_correlation"):
             os.mkdir("information_correlation")
 
-        klines = self._klines
-        feature = self._feature
-
         feature_arr, klines_arr = self.format_array(return_minutes)
         print("[green] Start calculating the information correlation... [/green]")
 
@@ -122,13 +165,13 @@ class EvaluationFeature:
             linewidth=1,
             linestyle="-.",
         )
-        plt.xlabel(feature.name)
+        plt.xlabel(self._feature.name)
         plt.ylabel(f"close_chg_pct_after_{return_minutes}min [%]")
         plt.title(
-            f"rho={round(rho, 3)}, pval={round(pval, 3)}\ncoef={round(lr.coef_[0][0], 3)}, intercept={round(lr.intercept_[0], 3)}\n{feature.name} vs close_chg_pct_after_{return_minutes}min"
+            f"rho={round(rho, 3)}, pval={round(pval, 3)}\ncoef={round(lr.coef_[0][0], 3)}, intercept={round(lr.intercept_[0], 3)}\n{self._feature.name} vs close_chg_pct_after_{return_minutes}min"
         )
         plt.tight_layout()
-        save_dir = f"information_correlation/{feature.name}_vs_close_chg_pct_after_{return_minutes}min.png"
+        save_dir = f"information_correlation/{self._feature.name}_vs_close_chg_pct_after_{return_minutes}min.png"
         if kwargs.get("save_name", False):
             save_dir = save_dir.replace(".png", f"_{kwargs['save_name']}.png")
         plt.savefig(save_dir)
