@@ -6,11 +6,16 @@ Download the following data from binance (USDT-M), bybit (linear) in one go.
 |              | binance | bybit |
 |--------------|---------|-------|
 | klines       |      ✅  |   ✅  |
+| aggTrades |      ✅  |   TBD  |
 | fundingRate  |    ✅    |   ✅  |
+| liquidationSnapshot |    ✅    |  ❌  |
 
 ## /feature
-### preprocessing
+### preprocessing.py
 Perform preprocessing for downloaded data.
 
-### information_correlation
-Calculate and Visualize information correlation (IC). High IC (>0.05) indicates an important feature.
+### engineering.py
+Perform feature engineering for preprocessed data.
+
+### evaluation.py
+Evaluate the performance of the engineered features.
