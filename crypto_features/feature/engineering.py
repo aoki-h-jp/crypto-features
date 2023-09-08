@@ -331,7 +331,9 @@ class FeatureEngineering:
 
         :param count_minutes: minutes to calculate mean liquidation
         """
-        df = self.count_quote_liquidation(count_minutes).abs() / self.count_liquidation(count_minutes)
+        df = self.count_quote_liquidation(count_minutes).abs() / self.count_liquidation(
+            count_minutes
+        )
         df = df.fillna(0)
         return df.resample("1S").mean().fillna(0)
 
@@ -378,7 +380,7 @@ class FeatureEngineering:
 
         aggtrades["price"] = aggtrades["price"].astype(float)
         aggtrades["quantity"] = aggtrades["quantity"].astype(float)
-        aggtrades["amount"] = (aggtrades["price"] * aggtrades["quantity"])
+        aggtrades["amount"] = aggtrades["price"] * aggtrades["quantity"]
         index_range = pd.date_range(
             start=self._start_time, end=self._end_time, freq="1S", tz="UTC"
         )
@@ -392,8 +394,10 @@ class FeatureEngineering:
         empty_df["aggtrade_amount"] = empty_df.index.to_series().apply(sum_amount)
         empty_df["aggtrade_amount"] = empty_df["aggtrade_amount"].fillna(0)
         empty_df["aggtrade_amount"] = empty_df["aggtrade_amount"].astype(float)
-        df = self.count_quote_liquidation(count_minutes).abs() / empty_df["aggtrade_amount"]
+        df = (
+            self.count_quote_liquidation(count_minutes).abs()
+            / empty_df["aggtrade_amount"]
+        )
         df = df.fillna(0)
 
         return df
-
