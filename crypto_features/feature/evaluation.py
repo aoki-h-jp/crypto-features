@@ -9,8 +9,9 @@ import pandas as pd
 from rich import print
 from scipy.stats import pearsonr
 from sklearn.linear_model import LinearRegression
+
 # from crypto_features.feature.exceptions import InsufficientDataError
-from .exceptions import InsufficientDataError, DataNotFoundError
+from .exceptions import DataNotFoundError, InsufficientDataError
 
 
 class EvaluationFeature:
@@ -68,23 +69,31 @@ class EvaluationFeature:
         if self._aggtrades is None:
             raise DataNotFoundError("The aggtrades data is not given.")
 
-        self._aggtrades['is_buyer_maker_count'] = self._aggtrades['is_buyer_maker'].map({True: -1, False: 1})
-        self._aggtrades['buy_quantity'] = self._aggtrades['quantity'].where(self._aggtrades['is_buyer_maker'] == False, 0)
-        self._aggtrades['sell_quantity'] = self._aggtrades['quantity'].where(self._aggtrades['is_buyer_maker'] == True, 0)
-        self._aggtrades['price'] = self._aggtrades['price'].astype(float)
+        self._aggtrades["is_buyer_maker_count"] = self._aggtrades["is_buyer_maker"].map(
+            {True: -1, False: 1}
+        )
+        self._aggtrades["buy_quantity"] = self._aggtrades["quantity"].where(
+            self._aggtrades["is_buyer_maker"] == False, 0
+        )
+        self._aggtrades["sell_quantity"] = self._aggtrades["quantity"].where(
+            self._aggtrades["is_buyer_maker"] == True, 0
+        )
+        self._aggtrades["price"] = self._aggtrades["price"].astype(float)
 
         aggregation_updated = {
-            'price': 'mean',
-            'buy_quantity': 'sum',
-            'sell_quantity': 'sum',
-            'is_buyer_maker_count': 'sum'
+            "price": "mean",
+            "buy_quantity": "sum",
+            "sell_quantity": "sum",
+            "is_buyer_maker_count": "sum",
         }
 
-        resampled_updated_data = self._aggtrades.resample('1S').agg(aggregation_updated)
-        resampled_updated_data['net_quantity'] = resampled_updated_data['buy_quantity'] - resampled_updated_data[
-            'sell_quantity']
-        resampled_updated_data['count'] = self._aggtrades.resample('1S').size()
-        resampled_updated_data.fillna(method='ffill', inplace=True)
+        resampled_updated_data = self._aggtrades.resample("1S").agg(aggregation_updated)
+        resampled_updated_data["net_quantity"] = (
+            resampled_updated_data["buy_quantity"]
+            - resampled_updated_data["sell_quantity"]
+        )
+        resampled_updated_data["count"] = self._aggtrades.resample("1S").size()
+        resampled_updated_data.fillna(method="ffill", inplace=True)
         resampled_updated_data["close"] = resampled_updated_data["price"].astype(float)
 
         return resampled_updated_data
@@ -108,7 +117,9 @@ class EvaluationFeature:
             if self._feature is None:
                 raise DataNotFoundError("The feature data is not given.")
             else:
-                raise InsufficientDataError("The feature data frequency is not in seconds or minutes.")
+                raise InsufficientDataError(
+                    "The feature data frequency is not in seconds or minutes."
+                )
 
         close_chg_pct_header = f"close_chg_pct_after_{return_minutes}min"
         klines["close"] = klines["close"].astype(float)

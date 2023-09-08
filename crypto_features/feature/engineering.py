@@ -5,7 +5,9 @@ import datetime
 
 import numpy as np
 import pandas as pd
-from .exceptions import DataNotFoundError, InsufficientDataError, InvalidParameterError
+
+from .exceptions import (DataNotFoundError, InsufficientDataError,
+                         InvalidParameterError)
 
 
 class FeatureEngineering:
@@ -20,7 +22,9 @@ class FeatureEngineering:
         """
         self._feature: pd.Series = kwargs.get("feature", None)
         self._klines: pd.DataFrame = kwargs.get("klines", None)
-        self._liquidationSnapshot: pd.DataFrame = kwargs.get("liquidationsnapshot", None)
+        self._liquidationSnapshot: pd.DataFrame = kwargs.get(
+            "liquidationsnapshot", None
+        )
         self._start_time: datetime.datetime = kwargs.get("start_time", None)
         self._end_time: datetime.datetime = kwargs.get("end_time", None)
 
@@ -244,8 +248,10 @@ class FeatureEngineering:
         else:
             parsed = self._liquidationSnapshot
 
-        parsed['trade_count'] = parsed['side'].map({'BUY': 1, 'SELL': -1})
-        index_range = pd.date_range(start=self._start_time, end=self._end_time, freq="1S", tz="UTC")
+        parsed["trade_count"] = parsed["side"].map({"BUY": 1, "SELL": -1})
+        index_range = pd.date_range(
+            start=self._start_time, end=self._end_time, freq="1S", tz="UTC"
+        )
         empty_df = pd.DataFrame(index=index_range)
 
         def sum_count(ts):
@@ -270,8 +276,14 @@ class FeatureEngineering:
         else:
             parsed = self._liquidationSnapshot
 
-        parsed["amount"] = parsed["price"] * parsed["original_quantity"] * parsed['side'].map({'BUY': 1, 'SELL': -1})
-        index_range = pd.date_range(start=self._start_time, end=self._end_time, freq="1S", tz="UTC")
+        parsed["amount"] = (
+            parsed["price"]
+            * parsed["original_quantity"]
+            * parsed["side"].map({"BUY": 1, "SELL": -1})
+        )
+        index_range = pd.date_range(
+            start=self._start_time, end=self._end_time, freq="1S", tz="UTC"
+        )
         empty_df = pd.DataFrame(index=index_range)
 
         def sum_amount(ts):
@@ -279,9 +291,15 @@ class FeatureEngineering:
             subset = parsed[(parsed.index > start_time) & (parsed.index <= ts)]
             return subset["amount"].sum()
 
-        empty_df["taker_buy_quote_volume"] = empty_df.index.to_series().apply(sum_amount)
-        empty_df["taker_buy_quote_volume"] = empty_df["taker_buy_quote_volume"].fillna(0)
-        empty_df["taker_buy_quote_volume"] = empty_df["taker_buy_quote_volume"].astype(float)
+        empty_df["taker_buy_quote_volume"] = empty_df.index.to_series().apply(
+            sum_amount
+        )
+        empty_df["taker_buy_quote_volume"] = empty_df["taker_buy_quote_volume"].fillna(
+            0
+        )
+        empty_df["taker_buy_quote_volume"] = empty_df["taker_buy_quote_volume"].astype(
+            float
+        )
 
         return empty_df["taker_buy_quote_volume"]
 

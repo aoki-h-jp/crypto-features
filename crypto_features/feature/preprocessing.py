@@ -134,7 +134,7 @@ class PreprocessingBinance:
             "first_trade_id",
             "last_trade_id",
             "transact_time",
-            "is_buyer_maker"
+            "is_buyer_maker",
         ]
 
         headers = [
@@ -144,11 +144,11 @@ class PreprocessingBinance:
             "first_trade_id",
             "last_trade_id",
             "timestamp_open",
-            "is_buyer_maker"
+            "is_buyer_maker",
         ]
         df = pd.DataFrame(columns=headers)
         for file in os.listdir(
-                os.path.join(self._data_dir, self._BINANCE_AGGTRADES_DIR, symbol)
+            os.path.join(self._data_dir, self._BINANCE_AGGTRADES_DIR, symbol)
         ):
             # header check
             df_append_tmp = pd.read_csv(
