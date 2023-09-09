@@ -2,12 +2,12 @@
 Feature selection module.
 """
 import datetime
+from math import sqrt
 
 import numpy as np
 import pandas as pd
 from sklearn.linear_model import Lasso
 from sklearn.metrics import mean_squared_error
-from math import sqrt
 
 
 class FeatureSelection:
@@ -18,7 +18,13 @@ class FeatureSelection:
         self._features_df = kwargs.get("features_df", None)
         self._return_arr = kwargs.get("return_arr", None)
 
-    def make_train_test_by_period(self, train_start: datetime.datetime, train_end: datetime.datetime, test_start: datetime.datetime, test_end: datetime.datetime) -> (pd.DataFrame, pd.DataFrame):
+    def make_train_test_by_period(
+        self,
+        train_start: datetime.datetime,
+        train_end: datetime.datetime,
+        test_start: datetime.datetime,
+        test_end: datetime.datetime,
+    ) -> (pd.DataFrame, pd.DataFrame):
         """
         Make train and test sets.
 
@@ -32,7 +38,13 @@ class FeatureSelection:
         return train, test
 
     @staticmethod
-    def feature_selection_by_lasso(train_x: pd.DataFrame, train_y: np.array, test_x: pd.DataFrame, test_y: np.array, alpha=0.001) -> (list, float):
+    def feature_selection_by_lasso(
+        train_x: pd.DataFrame,
+        train_y: np.array,
+        test_x: pd.DataFrame,
+        test_y: np.array,
+        alpha=0.001,
+    ) -> (list, float):
         """
         Lasso feature selection (Embedded method).
 
