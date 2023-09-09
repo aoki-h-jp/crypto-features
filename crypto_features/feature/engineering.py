@@ -5,6 +5,7 @@ import datetime
 
 import numpy as np
 import pandas as pd
+import pytz
 
 from .exceptions import (DataNotFoundError, InsufficientDataError,
                          InvalidParameterError)
@@ -29,6 +30,14 @@ class FeatureEngineering:
         )
         self._start_time: datetime.datetime = kwargs.get("start_time", None)
         self._end_time: datetime.datetime = kwargs.get("end_time", None)
+        self._set_utc_timezone()
+
+    def _set_utc_timezone(self):
+        """
+        Set UTC timezone to start and end time
+        """
+        self._start_time = self._start_time.replace(tzinfo=pytz.UTC)
+        self._end_time = self._end_time.replace(tzinfo=pytz.UTC)
 
     def _parse_feature(self) -> pd.Series:
         """

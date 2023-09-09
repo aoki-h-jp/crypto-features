@@ -14,7 +14,7 @@ from sklearn.linear_model import LinearRegression
 from .exceptions import DataNotFoundError, InsufficientDataError
 
 
-class EvaluationFeature:
+class FeatureEvaluation:
     def __init__(self, **kwargs):
         self._feature = kwargs.get("feature", None)
         self._klines = kwargs.get("klines", None)
