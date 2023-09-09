@@ -49,7 +49,9 @@ class FeatureEngineering:
             os.mkdir(f"feature_engineering")
         df.to_csv(f"feature_engineering/{filename}")
 
-    def make_return(self, return_minutes: int, save_return=False, filename=None) -> pd.Series:
+    def make_return(
+        self, return_minutes: int, save_return=False, filename=None
+    ) -> pd.Series:
         """
         Make return data
 
@@ -309,7 +311,9 @@ class FeatureEngineering:
         """
         return np.trunc(self._feature)
 
-    def count_liquidation(self, count_minutes: int, save_feature=False, filename=None) -> pd.Series:
+    def count_liquidation(
+        self, count_minutes: int, save_feature=False, filename=None
+    ) -> pd.Series:
         """
         Count number of liquidation
 
@@ -337,7 +341,9 @@ class FeatureEngineering:
         empty_df["count"] = empty_df["count"].fillna(0)
         empty_df["count"] = empty_df["count"].astype(int)
 
-        save_name = f"count_liquidation_{self._start_time.date()}_{self._end_time.date()}.csv"
+        save_name = (
+            f"count_liquidation_{self._start_time.date()}_{self._end_time.date()}.csv"
+        )
         if filename is not None:
             save_name = save_name.replace(".csv", f"_{filename}.csv")
         if save_feature:
@@ -345,7 +351,9 @@ class FeatureEngineering:
 
         return empty_df["count"]
 
-    def count_quote_liquidation(self, count_minutes: int, save_feature=False, filename=None) -> pd.Series:
+    def count_quote_liquidation(
+        self, count_minutes: int, save_feature=False, filename=None
+    ) -> pd.Series:
         """
         Count number of liquidation per minute
 
@@ -391,7 +399,9 @@ class FeatureEngineering:
 
         return empty_df["taker_buy_quote_volume"]
 
-    def mean_liquidation(self, count_minutes: int, save_feature=False, filename=None) -> pd.Series:
+    def mean_liquidation(
+        self, count_minutes: int, save_feature=False, filename=None
+    ) -> pd.Series:
         """
         Calculate mean of liquidation
 
@@ -406,7 +416,9 @@ class FeatureEngineering:
         df = df.resample("1S").mean().fillna(0)
         df = df.replace([np.inf, -np.inf], 0)
 
-        save_name = f"mean_liquidation_{self._start_time.date()}_{self._end_time.date()}.csv"
+        save_name = (
+            f"mean_liquidation_{self._start_time.date()}_{self._end_time.date()}.csv"
+        )
         if filename is not None:
             save_name = save_name.replace(".csv", f"_{filename}.csv")
         if save_feature:
@@ -414,7 +426,9 @@ class FeatureEngineering:
 
         return df
 
-    def ratio_liquidation(self, count_minutes: int, save_feature=False, filename=None) -> pd.Series:
+    def ratio_liquidation(
+        self, count_minutes: int, save_feature=False, filename=None
+    ) -> pd.Series:
         """
         Calculate ratio of liquidation
         count of number of liquidation / count of number of all trades
@@ -443,7 +457,9 @@ class FeatureEngineering:
         df = self.count_liquidation(count_minutes) / empty_df["aggtrade_count"]
         df = df.fillna(0)
 
-        save_name = f"ratio_liquidation_{self._start_time.date()}_{self._end_time.date()}.csv"
+        save_name = (
+            f"ratio_liquidation_{self._start_time.date()}_{self._end_time.date()}.csv"
+        )
         if filename is not None:
             save_name = save_name.replace(".csv", f"_{filename}.csv")
         if save_feature:
@@ -451,7 +467,9 @@ class FeatureEngineering:
 
         return df
 
-    def ratio_quote_liquidation(self, count_minutes: int, save_feature=False, filename=None) -> pd.Series:
+    def ratio_quote_liquidation(
+        self, count_minutes: int, save_feature=False, filename=None
+    ) -> pd.Series:
         """
         Calculate ratio of liquidation
         count of liquidation volume by quote / count of trades volume by quote
