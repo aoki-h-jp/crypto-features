@@ -102,13 +102,16 @@ class FeatureEngineering:
         price = aggtrades["price"].resample("1S").last().fillna(method="ffill")
         empty_df = pd.DataFrame(index=index_range)
         empty_df["price"] = price
-        empty_df["price"] = empty_df["price"].fillna(0)
+        empty_df["price"] = empty_df["price"].fillna(method="ffill")
         empty_df["price"] = empty_df["price"].astype(float)
         empty_df["price"] = empty_df["price"].round(4)
 
         def calc_volatility(ts):
-            start_time = ts - pd.Timedelta(hours=24)
-            subset = empty_df[(empty_df.index > start_time) & (empty_df.index <= ts)]
+            end_time = ts + pd.Timedelta(hours=24)
+            subset = empty_df[(empty_df.index > ts) & (empty_df.index <= end_time)]
+            min_price = subset["price"].min()
+            if min_price == 0:
+                return np.nan
             return (subset["price"].max() - subset["price"].min()) / subset[
                 "price"
             ].min()
