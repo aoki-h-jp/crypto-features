@@ -2,12 +2,13 @@
 Feature engineering module
 """
 import datetime
+import os
 
 import numpy as np
 import pandas as pd
+import pytz
 
-from .exceptions import (DataNotFoundError, InsufficientDataError,
-                         InvalidParameterError)
+from .exceptions import InvalidParameterError
 
 
 class FeatureEngineering:
@@ -29,6 +30,56 @@ class FeatureEngineering:
         )
         self._start_time: datetime.datetime = kwargs.get("start_time", None)
         self._end_time: datetime.datetime = kwargs.get("end_time", None)
+        self._set_utc_timezone()
+
+    def _set_utc_timezone(self):
+        """
+        Set UTC timezone to start and end time
+        """
+        self._start_time = self._start_time.replace(tzinfo=pytz.UTC)
+        self._end_time = self._end_time.replace(tzinfo=pytz.UTC)
+
+    @staticmethod
+    def save_dataframe(df: pd.DataFrame, filename: str):
+        """
+        Save dataframe to csv
+        """
+        if not os.path.exists(f"feature_engineering"):
+            os.mkdir(f"feature_engineering")
+        df.to_csv(f"feature_engineering/{filename}")
+
+    def make_return(
+        self, return_minutes: int, save_return=False, filename=None
+    ) -> pd.Series:
+        """
+        Make return data
+
+        :param return_minutes: minutes to calculate return
+        :param save_return: save return to csv
+        :param filename: filename to save return
+        """
+        if self._check_start_end_time():
+            aggtrades = self._parse_aggtrades()
+        else:
+            aggtrades = self._aggtrades
+        index_range = pd.date_range(
+            start=self._start_time, end=self._end_time, freq="1S", tz="UTC"
+        )
+        aggtrades["price"] = aggtrades["price"].astype(float)
+        price = aggtrades["price"].resample("1S").last().fillna(method="ffill")
+        empty_df = pd.DataFrame(index=index_range)
+        empty_df["return"] = price
+        empty_df["return"] = empty_df["return"].fillna(0)
+        empty_df["return"] = empty_df["return"].astype(float)
+        empty_df["return"] = empty_df["return"].round(4)
+
+        save_name = f"return_{self._start_time.date()}_{self._end_time.date()}.csv"
+        if filename is not None:
+            save_name = save_name.replace(".csv", f"_{filename}.csv")
+        if save_return:
+            self.save_dataframe(empty_df["return"], save_name)
+
+        return empty_df["return"]
 
     def _parse_feature(self) -> pd.Series:
         """
@@ -259,11 +310,15 @@ class FeatureEngineering:
         """
         return np.trunc(self._feature)
 
-    def count_liquidation(self, count_minutes: int) -> pd.Series:
+    def count_liquidation(
+        self, count_minutes: int, save_feature=False, filename=None
+    ) -> pd.Series:
         """
         Count number of liquidation
 
         :param count_minutes: minutes to count liquidation
+        :param save_feature: save feature to csv
+        :param filename: filename to save feature
         """
         if self._check_start_end_time():
             parsed = self._parse_liquidationsnapshot()
@@ -285,13 +340,25 @@ class FeatureEngineering:
         empty_df["count"] = empty_df["count"].fillna(0)
         empty_df["count"] = empty_df["count"].astype(int)
 
+        save_name = (
+            f"count_liquidation_{self._start_time.date()}_{self._end_time.date()}.csv"
+        )
+        if filename is not None:
+            save_name = save_name.replace(".csv", f"_{filename}.csv")
+        if save_feature:
+            self.save_dataframe(empty_df["count"], save_name)
+
         return empty_df["count"]
 
-    def count_quote_liquidation(self, count_minutes: int) -> pd.Series:
+    def count_quote_liquidation(
+        self, count_minutes: int, save_feature=False, filename=None
+    ) -> pd.Series:
         """
         Count number of liquidation per minute
 
         :param count_minutes: minutes to count liquidation
+        :param save_feature: save feature to csv
+        :param filename: filename to save feature
         """
         if self._check_start_end_time():
             parsed = self._parse_liquidationsnapshot()
@@ -323,26 +390,51 @@ class FeatureEngineering:
             float
         )
 
+        save_name = f"count_quote_liquidation_{self._start_time.date()}_{self._end_time.date()}.csv"
+        if filename is not None:
+            save_name = save_name.replace(".csv", f"_{filename}.csv")
+        if save_feature:
+            self.save_dataframe(empty_df["taker_buy_quote_volume"], save_name)
+
         return empty_df["taker_buy_quote_volume"]
 
-    def mean_liquidation(self, count_minutes: int) -> pd.Series:
+    def mean_liquidation(
+        self, count_minutes: int, save_feature=False, filename=None
+    ) -> pd.Series:
         """
         Calculate mean of liquidation
 
         :param count_minutes: minutes to calculate mean liquidation
+        :param save_feature: save feature to csv
+        :param filename: filename to save feature
         """
         df = self.count_quote_liquidation(count_minutes).abs() / self.count_liquidation(
             count_minutes
         )
         df = df.fillna(0)
-        return df.resample("1S").mean().fillna(0)
+        df = df.resample("1S").mean().fillna(0)
+        df = df.replace([np.inf, -np.inf], 0)
 
-    def ratio_liquidation(self, count_minutes: int) -> pd.Series:
+        save_name = (
+            f"mean_liquidation_{self._start_time.date()}_{self._end_time.date()}.csv"
+        )
+        if filename is not None:
+            save_name = save_name.replace(".csv", f"_{filename}.csv")
+        if save_feature:
+            self.save_dataframe(df, save_name)
+
+        return df
+
+    def ratio_liquidation(
+        self, count_minutes: int, save_feature=False, filename=None
+    ) -> pd.Series:
         """
         Calculate ratio of liquidation
         count of number of liquidation / count of number of all trades
 
         :param count_minutes: minutes to calculate ratio liquidation
+        :param save_feature: save feature to csv
+        :param filename: filename to save feature
         """
         if self._check_start_end_time():
             aggtrades = self._parse_aggtrades()
@@ -364,14 +456,26 @@ class FeatureEngineering:
         df = self.count_liquidation(count_minutes) / empty_df["aggtrade_count"]
         df = df.fillna(0)
 
+        save_name = (
+            f"ratio_liquidation_{self._start_time.date()}_{self._end_time.date()}.csv"
+        )
+        if filename is not None:
+            save_name = save_name.replace(".csv", f"_{filename}.csv")
+        if save_feature:
+            self.save_dataframe(df, save_name)
+
         return df
 
-    def ratio_quote_liquidation(self, count_minutes: int) -> pd.Series:
+    def ratio_quote_liquidation(
+        self, count_minutes: int, save_feature=False, filename=None
+    ) -> pd.Series:
         """
         Calculate ratio of liquidation
         count of liquidation volume by quote / count of trades volume by quote
 
         :param count_minutes: minutes to calculate ratio liquidation
+        :param save_feature: save feature to csv
+        :param filename: filename to save feature
         """
         if self._check_start_end_time():
             aggtrades = self._parse_aggtrades()
@@ -399,5 +503,11 @@ class FeatureEngineering:
             / empty_df["aggtrade_amount"]
         )
         df = df.fillna(0)
+
+        save_name = f"ratio_quote_liquidation_{self._start_time.date()}_{self._end_time.date()}.csv"
+        if filename is not None:
+            save_name = save_name.replace(".csv", f"_{filename}.csv")
+        if save_feature:
+            self.save_dataframe(df, save_name)
 
         return df

@@ -14,7 +14,7 @@ from sklearn.linear_model import LinearRegression
 from .exceptions import DataNotFoundError, InsufficientDataError
 
 
-class EvaluationFeature:
+class FeatureEvaluation:
     def __init__(self, **kwargs):
         self._feature = kwargs.get("feature", None)
         self._klines = kwargs.get("klines", None)
@@ -29,6 +29,31 @@ class EvaluationFeature:
         if self._klines is None:
             raise DataNotFoundError("The klines data is not given.")
         return self._klines["close"].pct_change(minutes)
+
+    def plot_datetime_vs_feature(self):
+        """
+        Plot datetime vs feature
+        """
+        if self._feature is None:
+            raise DataNotFoundError("The feature data is not given.")
+        if self._klines is None:
+            raise DataNotFoundError("The klines data is not given.")
+
+        fig, ax1 = plt.subplots(figsize=(8, 8))
+        ax1.plot(self._feature.index, self._feature.values)
+        ax1.set_title(self._feature.name)
+        ax1.set_xlabel("datetime")
+        ax1.set_ylabel("feature")
+        ax1.tick_params(left=True, bottom=True, labelleft=True, labelbottom=True)
+
+        ax2 = ax1.twinx()
+        ax2.plot(self._klines.index, self._klines["close"].values, color="k")
+        ax2.set_ylabel("price")
+        ax2.tick_params(right=True, labelright=True)
+
+        plt.tight_layout()
+        plt.savefig(f"{self._feature.name}.png")
+        plt.close()
 
     def visualize_histogram(self, return_minutes: int):
         """
