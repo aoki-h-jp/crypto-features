@@ -5,11 +5,12 @@ import datetime
 from math import sqrt
 
 import pandas as pd
-from sklearn.linear_model import Lasso
-from sklearn.feature_selection import RFECV
 from sklearn.ensemble import RandomForestRegressor
+from sklearn.feature_selection import RFECV
+from sklearn.linear_model import Lasso
 from sklearn.metrics import mean_squared_error
 from sklearn.preprocessing import StandardScaler
+
 from .exceptions import InvalidParameterError
 
 
@@ -22,10 +23,10 @@ class FeatureSelection:
         self._return_df: pd.DataFrame = kwargs.get("return_df", None)
 
     def make_train_test_by_period(
-            self,
-            train_start: datetime.datetime,
-            test_start: datetime.datetime,
-            test_end: datetime.datetime,
+        self,
+        train_start: datetime.datetime,
+        test_start: datetime.datetime,
+        test_end: datetime.datetime,
     ) -> (pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame):
         """
         Make train and test sets.
@@ -42,11 +43,11 @@ class FeatureSelection:
 
     @staticmethod
     def feature_selection_by_lasso(
-            train_x: pd.DataFrame,
-            train_y: pd.DataFrame,
-            test_x: pd.DataFrame,
-            test_y: pd.DataFrame,
-            alpha=0.001,
+        train_x: pd.DataFrame,
+        train_y: pd.DataFrame,
+        test_x: pd.DataFrame,
+        test_y: pd.DataFrame,
+        alpha=0.001,
     ) -> (list, float):
         """
         Lasso feature selection (Embedded method).
@@ -72,12 +73,13 @@ class FeatureSelection:
 
     @staticmethod
     def feature_selection_by_rfecv(
-            train_x: pd.DataFrame,
-            train_y: pd.DataFrame,
-            test_x: pd.DataFrame,
-            test_y: pd.DataFrame,
-            regressor="rf",
-            **kwargs) -> (list, float, pd.DataFrame):
+        train_x: pd.DataFrame,
+        train_y: pd.DataFrame,
+        test_x: pd.DataFrame,
+        test_y: pd.DataFrame,
+        regressor="rf",
+        **kwargs
+    ) -> (list, float, pd.DataFrame):
         """
         RFECV feature selection (Wrapper method).
 
@@ -97,7 +99,14 @@ class FeatureSelection:
         else:
             raise InvalidParameterError("regressor must be rf or lasso")
 
-        rfecv = RFECV(estimator=regressor, step=5, cv=5, min_features_to_select=3, scoring="neg_mean_squared_error", verbose=True)
+        rfecv = RFECV(
+            estimator=regressor,
+            step=5,
+            cv=5,
+            min_features_to_select=3,
+            scoring="neg_mean_squared_error",
+            verbose=True,
+        )
         train_x_arr = train_x.values
         train_y_arr = train_y.values
         test_x_arr = test_x.values
@@ -110,6 +119,8 @@ class FeatureSelection:
         feature_importance = pd.DataFrame()
         feature_importance["feature"] = selected_feature
         feature_importance["importance"] = rfecv.estimator_.feature_importances_
-        feature_importance = feature_importance.sort_values(by="importance", ascending=False)
+        feature_importance = feature_importance.sort_values(
+            by="importance", ascending=False
+        )
 
         return selected_feature, rmse, feature_importance
