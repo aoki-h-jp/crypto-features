@@ -22,6 +22,9 @@ class PreprocessingBinance:
     _BINANCE_LIQUIDATIONSNAPSHOT_DIR = os.path.join(
         "data", "futures", "um", "daily", "liquidationSnapshot"
     )
+    _BINANCE_OPENINTEREST_DIR = os.path.join(
+        "data", "futures", "um", "daily", "metrics"
+    )
 
     def __init__(self, data_dir):
         self._data_dir = data_dir
@@ -283,6 +286,41 @@ class PreprocessingBinance:
 
         return df
 
+    def _load_openinterest_data(self, symbol) -> pd.DataFrame:
+        """
+        Load open interest data from csv files.
+        :param symbol: symbol name
+        :return: preprocessed open interest data
+        """
+        # Load open interest data
+        # merge all csv files
+        df = pd.DataFrame()
+        for file in os.listdir(
+            os.path.join(self._data_dir, self._BINANCE_OPENINTEREST_DIR, symbol)
+        ):
+            df = pd.concat(
+                [
+                    df,
+                    pd.read_csv(
+                        "/".join(
+                            [
+                                self._data_dir,
+                                self._BINANCE_OPENINTEREST_DIR,
+                                symbol,
+                                file,
+                            ]
+                        )
+                    ),
+                ]
+            )
+
+        df.columns = ["timestamp_open","symbol","sum_open_interest","sum_open_interest_value","count_toptrader_long_short_ratio","sum_toptrader_long_short_ratio","count_long_short_ratio","sum_taker_long_short_vol_ratio"]
+        df["timestamp_open"] = pd.to_datetime(df["timestamp_open"], utc=True)
+        df.set_index("timestamp_open", inplace=True)
+        df = df.drop(["symbol", "count_toptrader_long_short_ratio","sum_toptrader_long_short_ratio","count_long_short_ratio","sum_taker_long_short_vol_ratio"], axis=1)
+
+        return df
+
     def load_klines_data(self, symbol):
         return self._load_klines_data(symbol)
 
@@ -295,6 +333,9 @@ class PreprocessingBinance:
     def load_liquidationsnapshot_data(self, symbol):
         return self._load_liquidationsnapshot_data(symbol)
 
+    def load_openinterest_data(self, symbol):
+        return self._load_openinterest_data(symbol)
+
 
 class PreprocessingBybit:
     """
@@ -302,7 +343,7 @@ class PreprocessingBybit:
     """
 
     _BYBIT_KLINES_DIR = os.path.join("bybit_data", "klines")
-    _BYBIT_AGGTRADES_DIR = os.path.join("bybit_data", "trades")
+    # _BYBIT_AGGTRADES_DIR = os.path.join("bybit_data", "trades")
     _BYBIT_FUNDINGRATE_DIR = os.path.join("bybit_data", "fundingRate")
 
     def __init__(self, data_dir):
