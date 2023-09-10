@@ -314,10 +314,28 @@ class PreprocessingBinance:
                 ]
             )
 
-        df.columns = ["timestamp_open","symbol","sum_open_interest","sum_open_interest_value","count_toptrader_long_short_ratio","sum_toptrader_long_short_ratio","count_long_short_ratio","sum_taker_long_short_vol_ratio"]
+        df.columns = [
+            "timestamp_open",
+            "symbol",
+            "sum_open_interest",
+            "sum_open_interest_value",
+            "count_toptrader_long_short_ratio",
+            "sum_toptrader_long_short_ratio",
+            "count_long_short_ratio",
+            "sum_taker_long_short_vol_ratio",
+        ]
         df["timestamp_open"] = pd.to_datetime(df["timestamp_open"], utc=True)
         df.set_index("timestamp_open", inplace=True)
-        df = df.drop(["symbol", "count_toptrader_long_short_ratio","sum_toptrader_long_short_ratio","count_long_short_ratio","sum_taker_long_short_vol_ratio"], axis=1)
+        df = df.drop(
+            [
+                "symbol",
+                "count_toptrader_long_short_ratio",
+                "sum_toptrader_long_short_ratio",
+                "count_long_short_ratio",
+                "sum_taker_long_short_vol_ratio",
+            ],
+            axis=1,
+        )
 
         return df
 
