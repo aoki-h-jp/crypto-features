@@ -109,7 +109,9 @@ class FeatureEngineering:
         def calc_volatility(ts):
             start_time = ts - pd.Timedelta(hours=24)
             subset = empty_df[(empty_df.index > start_time) & (empty_df.index <= ts)]
-            return (subset["price"].max() - subset["price"].min()) / subset["price"].min()
+            return (subset["price"].max() - subset["price"].min()) / subset[
+                "price"
+            ].min()
 
         empty_df["volatility"] = empty_df.index.to_series().apply(calc_volatility)
 
