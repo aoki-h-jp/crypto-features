@@ -9,7 +9,7 @@ Download the following data from binance (USDT-M), bybit (linear) in one go.
 | aggTrades |      ✅  |   TBD  |
 | fundingRate  |    ✅    |   ✅  |
 | liquidationSnapshot |    ✅    |  ❌  |
-| openInterest |    ✅    |  ❌  |
+| openInterest |    ✅    |  TBD  |
 
 ## /feature
 ### preprocessing.py

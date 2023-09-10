@@ -79,7 +79,7 @@ class FeatureSelection:
         test_y: pd.DataFrame,
         regressor="rf",
         **kwargs
-    ) -> (list, float, pd.DataFrame):
+    ) -> (list, float, float, pd.DataFrame):
         """
         RFECV feature selection (Wrapper method).
 
@@ -116,6 +116,7 @@ class FeatureSelection:
         predict = rfecv.predict(test_x_arr)
         mse = mean_squared_error(test_y_arr, predict)
         rmse = sqrt(mse)
+        score = rfecv.score(test_x_arr, test_y_arr)
         feature_importance = pd.DataFrame()
         feature_importance["feature"] = selected_feature
         feature_importance["importance"] = rfecv.estimator_.feature_importances_
@@ -123,4 +124,4 @@ class FeatureSelection:
             by="importance", ascending=False
         )
 
-        return selected_feature, rmse, feature_importance
+        return selected_feature, rmse, score, feature_importance
