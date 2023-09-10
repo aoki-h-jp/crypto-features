@@ -9,6 +9,7 @@ Download the following data from binance (USDT-M), bybit (linear) in one go.
 | aggTrades |      ✅  |   TBD  |
 | fundingRate  |    ✅    |   ✅  |
 | liquidationSnapshot |    ✅    |  ❌  |
+| openInterest |    ✅    |  ❌  |
 
 ## /feature
 ### preprocessing.py
@@ -19,3 +20,6 @@ Perform feature engineering for preprocessed data.
 
 ### evaluation.py
 Evaluate the performance of the engineered features.
+
+### selection.py
+Select better features for the model.
