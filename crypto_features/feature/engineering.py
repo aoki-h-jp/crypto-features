@@ -53,6 +53,8 @@ class FeatureEngineering:
     ) -> pd.Series:
         """
         Make return data
+        # TODO: return_minutes is not used
+        # TODO: this method is not working properly
 
         :param return_minutes: minutes to calculate return
         :param save_return: save return to csv
@@ -80,6 +82,46 @@ class FeatureEngineering:
             self.save_dataframe(empty_df["return"], save_name)
 
         return empty_df["return"]
+
+    def make_volatility(self, save_volatility=False, filename=None) -> pd.Series:
+        """
+        Make volatility data over 24 hours period.
+
+        :param save_volatility: save volatility to csv
+        :param filename: filename to save volatility
+        :return:
+        """
+        if self._check_start_end_time():
+            aggtrades = self._parse_aggtrades()
+        else:
+            aggtrades = self._aggtrades
+        index_range = pd.date_range(
+            start=self._start_time, end=self._end_time, freq="1S", tz="UTC"
+        )
+        aggtrades["price"] = aggtrades["price"].astype(float)
+        price = aggtrades["price"].resample("1S").last().fillna(method="ffill")
+        empty_df = pd.DataFrame(index=index_range)
+        empty_df["price"] = price
+        empty_df["price"] = empty_df["price"].fillna(0)
+        empty_df["price"] = empty_df["price"].astype(float)
+        empty_df["price"] = empty_df["price"].round(4)
+
+        def calc_volatility(ts):
+            start_time = ts - pd.Timedelta(hours=24)
+            subset = empty_df[(empty_df.index > start_time) & (empty_df.index <= ts)]
+            return (subset["price"].max() - subset["price"].min()) / subset[
+                "price"
+            ].min()
+
+        empty_df["volatility"] = empty_df.index.to_series().apply(calc_volatility)
+
+        save_name = f"volatility_{self._start_time.date()}_{self._end_time.date()}.csv"
+        if filename is not None:
+            save_name = save_name.replace(".csv", f"_{filename}.csv")
+        if save_volatility:
+            self.save_dataframe(empty_df["volatility"], save_name)
+
+        return empty_df["volatility"]
 
     def _parse_feature(self) -> pd.Series:
         """
